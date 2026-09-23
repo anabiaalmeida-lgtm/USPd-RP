@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sociedade de Debate USPd RP - Modelo Parlamento Britânico</title>
+    <!-- Script da Biblioteca Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #002b49; /* Azul USP */
+            --secondary: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #222222;
+            --accent: #d99b00; /* Dourado USP */
+            --danger: #d9534f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--secondary);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .btn-back {
+            position: absolute;
+            left: 20px;
+            top: 25px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        /* Grid de Pastas de Membros */
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .member-folder {
+            background-color: var(--card-bg);
+            border: 2px solid #e0e0e0;
+            border-top: 6px solid var(--primary);
+            border-radius: 8px;
+            padding: 18px;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .member-folder:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.12);
+            border-color: var(--primary);
+        }
+
+        .folder-click-area {
+            cursor: pointer;
+        }
+
+        .member-folder h3 {
+            margin: 0 0 8px 0;
+            color: var(--primary);
+            padding-right: 30px;
+        }
+
+        .btn-delete-member {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .btn-delete-member:hover {
+            color: var(--danger);
+            background-color: #fee;
+        }
+
+        /* Layout do Dashboard */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button.btn-primary {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        button.btn-primary:hover {
+            background-color: #004070;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .metric-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .metric-card.alert {
+            border-left-color: var(--danger);
+        }
+
+        .metric-title {
+            font-size: 0.8em;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <button id="btnVoltar" class="btn-back hidden" onclick="exibirSelecaoMembros()">← Voltar às Pastas</button>
+    <h1>Sociedade de Debate USPd RP</h1>
+    <p>Acompanhamento de Frequência e Aproveitamento - Modelo Parlamento Britânico</p>
+</header>
+
+<div class="container">
+
+    <!-- TELA 1: PASTAS DOS MEMBROS -->
+    <section id="telaMembros">
+        <div class="card">
+            <h2>Cadastrar Novo Membro</h2>
+            <form id="formNovoMembro" style="display: flex; gap: 10px;">
+                <input type="text" id="nomeMembro" placeholder="Nome completo do debatedor" required>
+                <button type="submit" class="btn-primary" style="width: auto; white-space: nowrap;">Criar Pasta</button>
+            </form>
+        </div>
+
+        <h2>Pastas dos Debatedores</h2>
+        <div id="gridMembros" class="members-grid">
+            <!-- Renderizado dinamicamente via JavaScript -->
+        </div>
+    </section>
+
+    <!-- TELA 2: DASHBOARD INDIVIDUAL -->
+    <section id="telaDashboard" class="hidden">
+        <div class="dashboard-layout">
+            
+            <!-- Formulário de Treino / Rodada -->
+            <div class="card">
+                <h2>Registrar Rodada / Treino</h2>
+                <form id="debateForm">
+                    <div class="form-group">
+                        <label for="presenteTreino">Presente no Treino?</label>
+                        <select id="presenteTreino">
+                            <option value="sim">Sim</option>
+                            <option value="nao">Não</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="debateu">Debateu na Rodada?</label>
+                        <select id="debateu">
+                            <option value="sim">Sim</option>
+                            <option value="nao">Não (Assistiu / Folgou)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="posicao">Posição no Debate:</label>
+                        <select id="posicao">
+                            <option value="PM">Primeiro Ministro (PM)</option>
+                            <option value="LO">Líder da Oposição (LO)</option>
+                            <option value="DPM">Vice Primeiro Ministro (DPM)</option>
+                            <option value="DLO">Vice Líder da Oposição (DLO)</option>
+                            <option value="MG">Membro do Governo (MG)</option>
+                            <option value="MO">Membro da Oposição (MO)</option>
+                            <option value="GW">Whip do Governo (GW)</option>
+                            <option value="CW">Whip da Oposição (CW)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="classificacao">Classificação na Rodada:</label>
+                        <select id="classificacao">
+                            <option value="1º Lugar">1º Lugar</option>
+                            <option value="2º Lugar">2º Lugar</option>
+                            <option value="3º Lugar">3º Lugar</option>
+                            <option value="4º Lugar">4º Lugar</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="speakerPoints">Speaker Points (50 a 100):</label>
+                        <input type="number" id="speakerPoints" min="50" max="100" value="75">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notaPedagogico">Média Acompanhamento Pedagógico (1 a 10):</label>
+                        <input type="number" id="notaPedagogico" min="1" max="10" step="0.5" value="8">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="defasagem">Principal Defasagem Notada:</label>
+                        <select id="defasagem">
+                            <option value="Refutação">Refutação</option>
+                            <option value="Mecanização">Mecanização / Extensão</option>
+                            <option value="Gestão de Tempo">Gestão de Tempo</option>
+                            <option value="Estratégia de Posição">Estratégia de Posição (BP)</option>
+                            <option value="POIs / Interatividade">POIs e Interatividade</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Salvar no Histórico</button>
+                </form>
+            </div>
+
+            <!-- Métricas e Gráfico -->
+            <main class="card">
+                <h2>Pasta Individual do Debatedor</h2>
+                <div style="margin-bottom: 20px; font-size: 1.1em;">
+                    <strong>Debatedor(a):</strong> <span id="nomeDebatedorAtual" style="color: var(--primary); font-weight: bold;">-</span>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">Frequência de Treinos</div>
+                        <div class="metric-value" id="freqTreinos">0%</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Qtd. de Debates</div>
+                        <div class="metric-value" id="qtdDebates">0</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Média Speaker Points</div>
+                        <div class="metric-value" id="avgSpeaker">0.0</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Média Pedagógica</div>
+                        <div class="metric-value" id="avgPedagogico">0.0</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Posição Mais Participada</div>
+                        <div class="metric-value" id="posicaoMaisFreq">-</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Lado Predominante</div>
+                        <div class="metric-value" id="ladoPredominante">-</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-title">Classificação Predominante</div>
+                        <div class="metric-value" id="classificacaoPredominante">-</div>
+                    </div>
+
+                    <div class="metric-card alert">
+                        <div class="metric-title">Defasagem Predominante</div>
+                        <div class="metric-value" id="defasagemPredominante">-</div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Evolução -->
+                <h3>Evolução de Speaker Points</h3>
+                <div class="chart-container">
+                    <canvas id="chartSpeakers"></canvas>
+                </div>
+            </main>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // Cole a URL da implantação do Apps Script entre as aspas abaixo para sincronizar com o Google Sheets
+    const SCRIPT_URL = "";
+
+    let bancoDados = { membros: {} };
+    let membroAtual = null;
+    let meuGraficoSpeaker = null;
+
+    const mapeamentoLado = {
+        'PM': 'Governo', 'DPM': 'Governo', 'MG': 'Governo', 'GW': 'Governo',
+        'LO': 'Oposição', 'DLO': 'Oposição', 'MO': 'Oposição', 'CW': 'Oposição'
+    };
+
+    // Carregamento de Dados (Sheets API com fallback para LocalStorage)
+    async function carregarDados() {
+        if (SCRIPT_URL !== "") {
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                bancoDados = data;
+            } catch (e) {
+                console.error("Erro ao carregar do Apps Script. Usando LocalStorage...", e);
+                carregarLocalStorage();
+            }
+        } else {
+            carregarLocalStorage();
+        }
+        renderizarPastasMembros();
+    }
+
+    function carregarLocalStorage() {
+        bancoDados = JSON.parse(localStorage.getItem('uspd_rp_dados')) || {
+            membros: {
+                "Ana Silva": { treinosTotais: 4, treinosPresentes: 4, historico: [] },
+                "Carlos Eduardo": { treinosTotais: 3, treinosPresentes: 2, historico: [] }
+            }
+        };
+    }
+
+    function salvarLocal() {
+        localStorage.setItem('uspd_rp_dados', JSON.stringify(bancoDados));
+    }
+
+    function obterModa(arr) {
+        if (!arr || arr.length === 0) return "-";
+        const contagem = {};
+        let maxElemento = arr[0], maxCount = 0;
+        for (const item of arr) {
+            contagem[item] = (contagem[item] || 0) + 1;
+            if (contagem[item] > maxCount) {
+                maxCount = contagem[item];
+                maxElemento = item;
+            }
+        }
+        return maxElemento;
+    }
+
+    // Controle de Pastas e Exclusão
+    function renderizarPastasMembros() {
+        const grid = document.getElementById('gridMembros');
+        grid.innerHTML = '';
+
+        if (!bancoDados.membros) return;
+
+        Object.keys(bancoDados.membros).forEach(nome => {
+            const dados = bancoDados.membros[nome];
+            const qtdDebates = dados.historico.length;
+            const freq = dados.treinosTotais > 0 ? ((dados.treinosPresentes / dados.treinosTotais) * 100).toFixed(0) : 0;
+
+            const folder = document.createElement('div');
+            folder.className = 'member-folder';
+            folder.innerHTML = `
+                <button class="btn-delete-member" title="Excluir Pasta" onclick="excluirMembro(event, '${nome}')">🗑️</button>
+                <div class="folder-click-area" onclick="abrirPastaMembro('${nome}')">
+                    <h3>📁 ${nome}</h3>
+                    <p style="font-size: 0.88em; color: #555; margin: 0;">
+                        Debates: <strong>${qtdDebates}</strong> | Presença: <strong>${freq}%</strong>
+                    </p>
+                </div>
+            `;
+            grid.appendChild(folder);
+        });
+    }
+
+    async function excluirMembro(event, nome) {
+        event.stopPropagation(); // Impede a abertura da pasta ao clicar em excluir
+        
+        if (confirm(`Tem certeza que deseja excluir a pasta de "${nome}"? Todos os registros serão permanentemente apagados.`)) {
+            delete bancoDados.membros[nome];
+            salvarLocal();
+            renderizarPastasMembros();
+
+            if (SCRIPT_URL !== "") {
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ action: "excluirMembro", nome: nome })
+                    });
+                } catch (e) {
+                    console.error("Erro ao excluir no Google Sheets:", e);
+                }
+            }
+        }
+    }
+
+    function abrirPastaMembro(nome) {
+        membroAtual = nome;
+        document.getElementById('telaMembros').classList.add('hidden');
+        document.getElementById('telaDashboard').classList.remove('hidden');
+        document.getElementById('btnVoltar').classList.remove('hidden');
+        document.getElementById('nomeDebatedorAtual').innerText = nome;
+        
+        atualizarDashboard();
+    }
+
+    function exibirSelecaoMembros() {
+        membroAtual = null;
+        document.getElementById('telaMembros').classList.remove('hidden');
+        document.getElementById('telaDashboard').classList.add('hidden');
+        document.getElementById('btnVoltar').classList.add('hidden');
+        carregarDados();
+    }
+
+    // Gráfico Chart.js
+    function renderizarGraficoSpeaker(historico) {
+        const ctx = document.getElementById('chartSpeakers').getContext('2d');
+
+        if (meuGraficoSpeaker) {
+            meuGraficoSpeaker.destroy();
+        }
+
+        const labels = historico.map((_, index) => `Debate ${index + 1}`);
+        const valoresSpeaker = historico.map(d => d.speaker);
+
+        meuGraficoSpeaker = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Speaker Points',
+                    data: valoresSpeaker,
+                    borderColor: '#002b49',
+                    backgroundColor: 'rgba(0, 43, 73, 0.08)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#d99b00',
+                    pointRadius: 5,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 50,
+                        max: 90,
+                        title: { display: true, text: 'Pontuação' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Histórico de Debates' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Atualização de Indicadores
+    function atualizarDashboard() {
+        if (!membroAtual || !bancoDados.membros[membroAtual]) return;
+
+        const dados = bancoDados.membros[membroAtual];
+        const historico = dados.historico;
+
+        const freqPct = dados.treinosTotais > 0 ? ((dados.treinosPresentes / dados.treinosTotais) * 100).toFixed(1) + '%' : '0%';
+        document.getElementById('freqTreinos').innerText = freqPct;
+
+        const totalDebates = historico.length;
+        document.getElementById('qtdDebates').innerText = totalDebates;
+
+        if (totalDebates > 0) {
+            const sumSpeaker = historico.reduce((acc, d) => acc + d.speaker, 0);
+            document.getElementById('avgSpeaker').innerText = (sumSpeaker / totalDebates).toFixed(1);
+
+            const sumPedagogico = historico.reduce((acc, d) => acc + d.pedagogico, 0);
+            document.getElementById('avgPedagogico').innerText = (sumPedagogico / totalDebates).toFixed(1);
+
+            document.getElementById('posicaoMaisFreq').innerText = obterModa(historico.map(d => d.posicao));
+            document.getElementById('ladoPredominante').innerText = obterModa(historico.map(d => d.lado));
+            document.getElementById('classificacaoPredominante').innerText = obterModa(historico.map(d => d.classificacao));
+            document.getElementById('defasagemPredominante').innerText = obterModa(historico.map(d => d.defasagem));
+
+            renderizarGraficoSpeaker(historico);
+        } else {
+            document.getElementById('avgSpeaker').innerText = "0.0";
+            document.getElementById('avgPedagogico').innerText = "0.0";
+            document.getElementById('posicaoMaisFreq').innerText = "-";
+            document.getElementById('ladoPredominante').innerText = "-";
+            document.getElementById('classificacaoPredominante').innerText = "-";
+            document.getElementById('defasagemPredominante').innerText = "-";
+            if (meuGraficoSpeaker) meuGraficoSpeaker.destroy();
+        }
+    }
+
+    // Handlers de Envio
+    document.getElementById('formNovoMembro').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nome = document.getElementById('nomeMembro').value.trim();
+        
+        if (nome) {
+            if (!bancoDados.membros) bancoDados.membros = {};
+            bancoDados.membros[nome] = { treinosTotais: 0, treinosPresentes: 0, historico: [] };
+            salvarLocal();
+            renderizarPastasMembros();
+
+            if (SCRIPT_URL !== "") {
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({ action: "criarMembro", nome: nome })
+                    });
+                } catch (err) {
+                    console.error("Erro ao salvar no Google Sheets:", err);
+                }
+            }
+            document.getElementById('nomeMembro').value = '';
+        }
+    });
+
+    document.getElementById('debateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!membroAtual) return;
+
+        const ePresente = document.getElementById('presenteTreino').value === 'sim';
+        const eDebateu = document.getElementById('debateu').value === 'sim';
+        const posicaoEscolhida = document.getElementById('posicao').value;
+
+        const payload = {
+            action: "salvarDebate",
+            nome: membroAtual,
+            presente: ePresente,
+            debateu: eDebateu,
+            posicao: posicaoEscolhida,
+            lado: mapeamentoLado[posicaoEscolhida],
+            classificacao: document.getElementById('classificacao').value,
+            speaker: parseFloat(document.getElementById('speakerPoints').value),
+            pedagogico: parseFloat(document.getElementById('notaPedagogico').value),
+            defasagem: document.getElementById('defasagem').value
+        };
+
+        // Atualização Local
+        const dadosMembro = bancoDados.membros[membroAtual];
+        dadosMembro.treinosTotais++;
+        if (ePresente) dadosMembro.treinosPresentes++;
+        if (eDebateu) {
+            dadosMembro.historico.push({
+                posicao: payload.posicao,
+                lado: payload.lado,
+                classificacao: payload.classificacao,
+                speaker: payload.speaker,
+                pedagogico: payload.pedagogico,
+                defasagem: payload.defasagem
+            });
+        }
+        salvarLocal();
+        atualizarDashboard();
+
+        // Envio para Google Sheets
+        if (SCRIPT_URL !== "") {
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Erro ao enviar debate ao Sheets:", err);
+            }
+        }
+    });
+
+    // Inicialização
+    carregarDados();
+</script>
+
+</body>
+</html>
